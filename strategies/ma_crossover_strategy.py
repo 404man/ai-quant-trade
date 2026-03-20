@@ -1,26 +1,21 @@
 import pandas as pd
+from strategies.factors.ma_factor import compute as ma_compute
 
 
 def generate_signals(prices: pd.Series) -> pd.Series:
     """
-    输入: 收盘价 Series（至少 30 个数据点才能计算 MA(30)）
-    输出: 同长度 Series，值为 "buy" / "sell" / "hold"
-    规则: MA(10) 上穿 MA(30) → buy（金叉），MA(10) 下穿 MA(30) → sell（死叉）
+    MA(10/30) crossover signals.
+    Entry: golden cross (fast crosses above slow).
+    Exit: death cross (fast crosses below slow).
     """
     signals = pd.Series("hold", index=prices.index)
-
     if len(prices) < 30:
         return signals
-
-    ma_fast = prices.rolling(10).mean()
-    ma_slow = prices.rolling(30).mean()
-
-    # Golden cross: fast crosses above slow
-    golden_cross = (ma_fast > ma_slow) & (ma_fast.shift(1) <= ma_slow.shift(1))
-    # Death cross: fast crosses below slow
-    death_cross = (ma_fast < ma_slow) & (ma_fast.shift(1) >= ma_slow.shift(1))
-
+    spread = ma_compute(prices)
+    # Golden cross: spread goes from non-positive to positive
+    golden_cross = (spread > 0) & (spread.shift(1) <= 0)
+    # Death cross: spread goes from non-negative to negative
+    death_cross = (spread < 0) & (spread.shift(1) >= 0)
     signals[golden_cross] = "buy"
     signals[death_cross] = "sell"
-
     return signals

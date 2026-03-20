@@ -1,22 +1,20 @@
 import pandas as pd
-import talib
+from strategies.factors.rsi_factor import compute as rsi_compute
+
+RSI_OVERSOLD = 30
+RSI_OVERBOUGHT = 70
+RSI_MIN_BARS = 15
 
 
 def generate_signals(prices: pd.Series) -> pd.Series:
     """
-    输入: 收盘价 Series（至少 15 个数据点才能计算 RSI(14)）
-    输出: 同长度 Series，值为 "buy" / "sell" / "hold"
-    规则: RSI < 30 → buy，RSI > 70 → sell，其余 → hold
+    RSI mean-reversion signals.
+    Entry: RSI < 30 (oversold). Exit: RSI > 70 (overbought).
     """
     signals = pd.Series("hold", index=prices.index)
-
-    if len(prices) < 15:
+    if len(prices) < RSI_MIN_BARS:
         return signals
-
-    rsi = talib.RSI(prices.values.astype('float64'), timeperiod=14)
-    rsi_series = pd.Series(rsi, index=prices.index)
-
-    signals[rsi_series < 30] = "buy"
-    signals[rsi_series > 70] = "sell"
-
+    rsi = rsi_compute(prices)
+    signals[rsi < RSI_OVERSOLD] = "buy"
+    signals[rsi > RSI_OVERBOUGHT] = "sell"
     return signals
