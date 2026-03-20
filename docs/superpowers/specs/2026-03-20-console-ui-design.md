@@ -181,6 +181,14 @@ stock/
 
 ---
 
+## 实现细节补充
+
+- **信号面板加载状态：** `GET /signal` 请求可能超过 1 秒（含 Claude 情绪分析），SignalPanel 需显示 loading skeleton，避免空白
+- **经纪商切换状态持久化：** `/terminal` 的 Alpaca Paper / Live 切换状态存 `localStorage`，刷新后保留
+- **系统日志生命周期：** 系统日志仅保留在前端内存（React state），页面刷新后清空，符合"本次会话"语义
+
+---
+
 ## 约束
 
 - 本地使用，无需认证
