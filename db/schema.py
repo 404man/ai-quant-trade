@@ -36,6 +36,23 @@ def init_db(db_path: str = DEFAULT_DB_PATH) -> None:
                 PRIMARY KEY (symbol, start, end)
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS sentiment_cache (
+                symbol      TEXT NOT NULL,
+                cached_at   TEXT NOT NULL,
+                sentiment   TEXT NOT NULL,
+                confidence  REAL NOT NULL,
+                PRIMARY KEY (symbol)
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS api_usage (
+                usage_date  TEXT NOT NULL,
+                api_name    TEXT NOT NULL,
+                call_count  INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (usage_date, api_name)
+            )
+        """)
         conn.commit()
     finally:
         conn.close()
