@@ -28,6 +28,14 @@ def init_db(db_path: str = DEFAULT_DB_PATH) -> None:
                 PRIMARY KEY (symbol, date)
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS cache_ranges (
+                symbol TEXT NOT NULL,
+                start  TEXT NOT NULL,
+                end    TEXT NOT NULL,
+                PRIMARY KEY (symbol, start, end)
+            )
+        """)
         conn.commit()
     finally:
         conn.close()

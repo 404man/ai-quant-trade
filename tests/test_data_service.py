@@ -1,7 +1,5 @@
 import pytest
-import tempfile
-import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import pandas as pd
 from db.schema import init_db
 from api.services.data_service import DataService
@@ -59,3 +57,18 @@ def test_fetch_empty_date_range_returns_empty_list(tmp_db):
     with patch("api.services.data_service.yf.download", return_value=pd.DataFrame()):
         result = svc.fetch("AAPL", "2024-01-01", "2024-01-01")
     assert result == []
+
+
+def test_fetch_invalid_date_raises_value_error(tmp_db):
+    svc = DataService(db_path=tmp_db)
+    with pytest.raises(ValueError, match="Invalid date format"):
+        svc.fetch("AAPL", "01/01/2024", "2024-01-31")
+
+
+def test_fetch_different_range_fetches_yfinance(tmp_db):
+    """A broader range request should re-fetch even if a narrower range is cached."""
+    svc = DataService(db_path=tmp_db)
+    with patch("api.services.data_service.yf.download", return_value=make_mock_yf_data()) as mock_dl:
+        svc.fetch("AAPL", "2024-01-02", "2024-01-04")  # narrow range
+        svc.fetch("AAPL", "2024-01-01", "2024-01-10")  # broader range
+    assert mock_dl.call_count == 2
