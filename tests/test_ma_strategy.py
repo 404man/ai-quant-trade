@@ -1,4 +1,3 @@
-import pytest
 import pandas as pd
 from strategies.ma_crossover_strategy import generate_signals
 

@@ -1,6 +1,5 @@
 import pytest
 import pandas as pd
-import numpy as np
 from strategies.rsi_strategy import generate_signals
 
 
