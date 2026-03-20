@@ -16,8 +16,8 @@ const ACTION_COLOR: Record<string, string> = {
 
 export function SignalPanel() {
   const [symbol, setSymbol] = useState("AAPL");
-  const [start, setStart] = useState("2024-01-01");
-  const [end, setEnd] = useState("2024-12-31");
+  const [start, setStart] = useState(() => new Date(Date.now() - 365 * 86400_000).toISOString().slice(0, 10));
+  const [end, setEnd] = useState(() => new Date().toISOString().slice(0, 10));
   const [capital, setCapital] = useState(500);
   const [loading, setLoading] = useState(false);
   const [trading, setTrading] = useState(false);
@@ -42,6 +42,7 @@ export function SignalPanel() {
 
   const handleTrade = async () => {
     if (!signal) return;
+    setError(null);
     setTrading(true);
     setTradeResult(null);
     try {
