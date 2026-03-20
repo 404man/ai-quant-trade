@@ -19,6 +19,8 @@ export function BrokerSelector() {
     localStorage.setItem(STORAGE_KEY, next);
   };
 
+  // UI reminder only — the backend uses its own Alpaca config (paper vs live)
+  // This toggle does not change the API call made by OrderForm
   return (
     <div className="flex items-center gap-3">
       <Badge variant={mode === "paper" ? "secondary" : "destructive"}>

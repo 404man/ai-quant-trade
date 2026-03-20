@@ -88,8 +88,8 @@ export function OrderForm() {
         <div className="rounded-md border p-3 text-sm space-y-1">
           <p className="font-medium">状态: <span className="capitalize">{result.status}</span></p>
           {result.order_id && <p className="text-muted-foreground">Order ID: {result.order_id}</p>}
-          {result.qty && <p className="text-muted-foreground">数量: {result.qty} 股</p>}
-          {result.price_estimate && <p className="text-muted-foreground">预估价: ${result.price_estimate}</p>}
+          {result.qty != null && <p className="text-muted-foreground">数量: {result.qty} 股</p>}
+          {result.price_estimate != null && <p className="text-muted-foreground">预估价: ${result.price_estimate}</p>}
           {result.reason && <p className="text-muted-foreground">原因: {result.reason}</p>}
         </div>
       )}
