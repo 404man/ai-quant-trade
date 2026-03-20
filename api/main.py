@@ -5,6 +5,7 @@ from api.routes.backtest import router as backtest_router
 from api.routes.sentiment import router as sentiment_router
 from api.routes.signal import router as signal_router
 from api.routes.trade import router as trade_router
+from api.routes.confirmations import router as confirmations_router
 
 
 @asynccontextmanager
@@ -25,6 +26,7 @@ app.include_router(backtest_router)
 app.include_router(sentiment_router)
 app.include_router(signal_router)
 app.include_router(trade_router)
+app.include_router(confirmations_router)
 
 
 @app.get("/health")
