@@ -15,6 +15,7 @@ export default function ExplorePage() {
   const [maResult, setMaResult] = useState<BacktestResponse | null>(null);
 
   const handleSubmit = async (params: { symbol: string; start: string; end: string }) => {
+    setBars([]);
     setLoading(true);
     try {
       const [prices, rsi, ma] = await Promise.all([

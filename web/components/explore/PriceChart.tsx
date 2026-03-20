@@ -14,7 +14,7 @@ export function PriceChart({ data }: Props) {
     if (!containerRef.current || data.length === 0) return;
 
     const chart = createChart(containerRef.current, {
-      width: containerRef.current.clientWidth,
+      autoSize: true,
       height: 400,
       layout: {
         background: { type: ColorType.Solid, color: "#ffffff" },
@@ -38,15 +38,7 @@ export function PriceChart({ data }: Props) {
     );
     chart.timeScale().fitContent();
 
-    const handleResize = () => {
-      if (containerRef.current) {
-        chart.applyOptions({ width: containerRef.current.clientWidth });
-      }
-    };
-    window.addEventListener("resize", handleResize);
-
     return () => {
-      window.removeEventListener("resize", handleResize);
       chart.remove();
     };
   }, [data]);
