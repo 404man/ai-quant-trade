@@ -29,7 +29,7 @@ def test_record_loss_and_retrieve(svc):
 def test_record_loss_upserts(svc):
     svc.record_loss("2026-01-01", 10.0)
     svc.record_loss("2026-01-01", 20.0)
-    assert svc.get_daily_loss("2026-01-01") == 20.0
+    assert svc.get_daily_loss("2026-01-01") == 30.0  # accumulates, not replaces
 
 
 def test_get_position_count_zero_initially(svc):

@@ -88,7 +88,8 @@ class TradeService:
         conn = get_connection(self.db_path)
         try:
             conn.execute(
-                "INSERT OR REPLACE INTO daily_loss (trade_date, loss_usd) VALUES (?, ?)",
+                "INSERT INTO daily_loss (trade_date, loss_usd) VALUES (?, ?) "
+                "ON CONFLICT(trade_date) DO UPDATE SET loss_usd = loss_usd + excluded.loss_usd",
                 (date_str, loss_usd),
             )
             conn.commit()

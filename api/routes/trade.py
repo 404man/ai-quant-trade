@@ -1,7 +1,7 @@
+import asyncio
 import math
-import time
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -33,26 +33,26 @@ def _insert_pending(order_id: str, symbol: str, action: str, qty: float, db_path
         conn.execute(
             "INSERT INTO pending_confirmations (order_id, symbol, action, qty, created_at) "
             "VALUES (?, ?, ?, ?, ?)",
-            (order_id, symbol, action, qty, datetime.utcnow().isoformat()),
+            (order_id, symbol, action, qty, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
     finally:
         conn.close()
 
 
-def _poll_confirmation(order_id: str, db_path: str = DEFAULT_DB_PATH) -> str:
+async def _poll_confirmation(order_id: str, db_path: str = DEFAULT_DB_PATH) -> str:
     """Poll until status is 'confirmed' or 'cancelled', or timeout. Returns final status string."""
-    deadline = time.time() + CONFIRMATION_TIMEOUT_SECS
-    while time.time() < deadline:
+    deadline = asyncio.get_event_loop().time() + CONFIRMATION_TIMEOUT_SECS
+    while asyncio.get_event_loop().time() < deadline:
         status = get_confirmation_status(order_id, db_path=db_path)
         if status in ("confirmed", "cancelled"):
             return status
-        time.sleep(POLL_INTERVAL_SECS)
+        await asyncio.sleep(POLL_INTERVAL_SECS)
     return "timeout"
 
 
 @router.post("/trade")
-def post_trade(req: TradeRequest):
+async def post_trade(req: TradeRequest):
     today = date.today().isoformat()
     trade_svc = TradeService()
     data_svc = DataService()
@@ -88,10 +88,12 @@ def post_trade(req: TradeRequest):
         price_estimate=last_price,
     )
 
-    outcome = _poll_confirmation(order_id)
+    outcome = await _poll_confirmation(order_id)
 
     if outcome == "confirmed":
         alpaca_order_id = trade_svc.submit_order(req.symbol.upper(), req.action, qty)
+        # Record estimated loss as 0 at submission time; actual P&L tracked separately
+        trade_svc.record_loss(today, 0.0)
         return {"status": "submitted", "order_id": alpaca_order_id, "qty": qty, "price_estimate": last_price}
 
     reason = "user_rejected" if outcome == "cancelled" else "timeout"
