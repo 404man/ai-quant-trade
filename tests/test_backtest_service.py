@@ -25,7 +25,7 @@ def make_price_data(n: int = 200) -> list[dict]:
 def test_backtest_returns_required_keys():
     svc = BacktestService()
     result = svc.run(make_price_data(), strategy="rsi")
-    assert set(result.keys()) >= {"sharpe_ratio", "max_drawdown", "annual_return", "trade_count"}
+    assert set(result.keys()) >= {"sharpe_ratio", "max_drawdown", "annual_return", "trade_count", "avg_holding_days"}
 
 
 def test_backtest_sharpe_is_float():
