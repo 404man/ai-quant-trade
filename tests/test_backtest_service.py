@@ -5,14 +5,16 @@ from api.services.backtest_service import BacktestService
 def make_price_data(n: int = 200) -> list[dict]:
     """生成 n 天的合成价格数据"""
     import random
+    import pandas as pd
     random.seed(42)
     price = 100.0
+    dates = pd.date_range("2020-01-01", periods=n, freq="D")
     records = []
     for i in range(n):
         change = random.uniform(-2, 2)
         price = max(10.0, price + change)
         records.append({
-            "date": f"2020-{(i // 30 + 1):02d}-{(i % 28 + 1):02d}",
+            "date": dates[i].strftime("%Y-%m-%d"),
             "open": price - 0.1,
             "high": price + 0.5,
             "low": price - 0.5,
@@ -72,3 +74,10 @@ def test_backtest_requires_minimum_data():
     result = svc.run(make_price_data(n=10), strategy="rsi")
     # 数据不足时 trade_count 为 0
     assert result["trade_count"] == 0
+
+
+def test_backtest_rsi_generates_trades_with_sufficient_data():
+    svc = BacktestService()
+    result = svc.run(make_price_data(n=200), strategy="rsi")
+    # With 200 days of random-walk data, the RSI strategy should generate at least 1 trade
+    assert result["trade_count"] > 0

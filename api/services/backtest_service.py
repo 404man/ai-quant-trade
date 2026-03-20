@@ -1,3 +1,5 @@
+import math
+
 import pandas as pd
 import vectorbt as vbt
 from strategies.rsi_strategy import generate_signals as rsi_signals
@@ -15,6 +17,8 @@ STRATEGY_MAP = {
 
 def _apply_max_duration(entries: pd.Series, exits: pd.Series, max_duration: int) -> pd.Series:
     """Add forced exit signals after max_duration days of holding."""
+    # Assumes entries and exits are mutually exclusive on the same bar
+    # (holds for RSI strategy where buy and sell conditions cannot both be true)
     new_exits = exits.copy()
     in_position = False
     entry_day = None
@@ -71,10 +75,9 @@ class BacktestService:
             slippage=SLIPPAGE_PCT,
             freq="D",
         )
+        # trades.duration is in bars; freq="D" means bars = calendar days
 
         stats = pf.stats()
-
-        import math
 
         sharpe_raw = stats.get("Sharpe Ratio", 0.0)
         sharpe = float(sharpe_raw) if (sharpe_raw is not None and not (isinstance(sharpe_raw, float) and math.isnan(sharpe_raw)) and not (isinstance(sharpe_raw, float) and math.isinf(sharpe_raw))) else 0.0
@@ -83,6 +86,8 @@ class BacktestService:
         if max_dd_raw is None or (isinstance(max_dd_raw, float) and math.isnan(max_dd_raw)):
             max_dd = 0.0
         else:
+            # vectorbt returns Max Drawdown [%] as a positive number (e.g. 15.3 for a 15.3% drawdown)
+            # divide by -100.0 to convert to a negative fraction (e.g. -0.153)
             max_dd = float(max_dd_raw) / -100.0
 
         total_return = float(stats.get("Total Return [%]", 0.0) or 0.0) / 100.0
