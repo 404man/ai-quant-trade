@@ -15,17 +15,19 @@ def init_db(db_path: str = DEFAULT_DB_PATH) -> None:
     if dir_name:
         os.makedirs(dir_name, exist_ok=True)
     conn = get_connection(db_path)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS price_cache (
-            symbol  TEXT NOT NULL,
-            date    TEXT NOT NULL,
-            open    REAL NOT NULL,
-            high    REAL NOT NULL,
-            low     REAL NOT NULL,
-            close   REAL NOT NULL,
-            volume  INTEGER NOT NULL,
-            PRIMARY KEY (symbol, date)
-        )
-    """)
-    conn.commit()
-    conn.close()
+    try:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS price_cache (
+                symbol  TEXT NOT NULL,
+                date    TEXT NOT NULL,
+                open    REAL NOT NULL,
+                high    REAL NOT NULL,
+                low     REAL NOT NULL,
+                close   REAL NOT NULL,
+                volume  INTEGER NOT NULL,
+                PRIMARY KEY (symbol, date)
+            )
+        """)
+        conn.commit()
+    finally:
+        conn.close()
