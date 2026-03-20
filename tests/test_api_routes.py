@@ -39,6 +39,13 @@ def test_data_price_missing_params_returns_422():
     assert resp.status_code == 422
 
 
+def test_data_price_invalid_date_returns_400():
+    with patch("api.routes.data.DataService") as MockSvc:
+        MockSvc.return_value.fetch.side_effect = ValueError("Invalid date format")
+        resp = client.get("/data/price?symbol=AAPL&start=bad-date&end=2024-01-31")
+    assert resp.status_code == 400
+
+
 def test_backtest_returns_200():
     with patch("api.routes.backtest.DataService") as MockData, \
          patch("api.routes.backtest.BacktestService") as MockBacktest:
