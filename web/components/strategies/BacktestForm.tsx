@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface Params {
+export interface Params {
   symbol: string;
   strategy: string;
   start: string;

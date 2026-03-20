@@ -1,7 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { BacktestResponse } from "@/lib/types";
 
-function fmt(value: number, key: string): string {
+type MetricKey = "sharpe_ratio" | "max_drawdown" | "annual_return" | "trade_count" | "avg_holding_days";
+
+function fmt(value: number, key: MetricKey): string {
   if (key === "max_drawdown" || key === "annual_return") {
     return `${(value * 100).toFixed(2)}%`;
   }
@@ -27,7 +29,7 @@ export function BacktestResults({ result }: { result: BacktestResponse }) {
             <CardTitle className="text-xs text-muted-foreground font-normal">{label}</CardTitle>
           </CardHeader>
           <CardContent className="pb-4 px-4">
-            <p className="text-xl font-semibold">{fmt(result[key] as number, key)}</p>
+            <p className="text-xl font-semibold">{fmt(result[key], key)}</p>
           </CardContent>
         </Card>
       ))}

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { fetchBacktest } from "@/lib/api";
 import type { BacktestResponse } from "@/lib/types";
-import { BacktestForm } from "@/components/strategies/BacktestForm";
+import { BacktestForm, type Params } from "@/components/strategies/BacktestForm";
 import { BacktestResults } from "@/components/strategies/BacktestResults";
 import { EquityCurve } from "@/components/strategies/EquityCurve";
 
@@ -12,13 +12,7 @@ export default function StrategiesPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<BacktestResponse | null>(null);
 
-  const handleSubmit = async (params: {
-    symbol: string;
-    strategy: string;
-    start: string;
-    end: string;
-    positionSizePct: number;
-  }) => {
+  const handleSubmit = async (params: Params) => {
     setLoading(true);
     try {
       const res = await fetchBacktest(
