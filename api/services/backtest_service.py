@@ -4,6 +4,7 @@ import pandas as pd
 import vectorbt as vbt
 from strategies.rsi_strategy import generate_signals as rsi_signals
 from strategies.ma_crossover_strategy import generate_signals as ma_signals
+from strategies.bar_runner import run_bar_by_bar
 
 COMMISSION_PER_TRADE = 1.0  # $1 per trade
 SLIPPAGE_PCT = 0.001         # 0.1%
@@ -40,9 +41,18 @@ def _apply_max_duration(entries: pd.Series, exits: pd.Series, max_duration: int)
 
 
 class BacktestService:
-    def run(self, price_data: list[dict], strategy: str) -> dict:
+    def run(
+        self,
+        price_data: list[dict],
+        strategy: str,
+        position_size_pct: float = 0.10,
+        mode: str = "vectorized",
+    ) -> dict:
         if strategy not in STRATEGY_MAP:
             raise ValueError(f"Unknown strategy: {strategy}. Valid: {list(STRATEGY_MAP.keys())}")
+
+        if not 0 < position_size_pct <= 1.0:
+            raise ValueError(f"position_size_pct must be in (0, 1.0], got {position_size_pct}")
 
         if len(price_data) < 30:
             return {
@@ -59,7 +69,12 @@ class BacktestService:
         close = df["close"]
 
         signal_fn = STRATEGY_MAP[strategy]
-        signals = signal_fn(close)
+        if mode == "bar_by_bar":
+            signals = run_bar_by_bar(close, signal_fn, lookback=50)
+        elif mode == "vectorized":
+            signals = signal_fn(close)
+        else:
+            raise ValueError(f"Unknown mode: {mode}. Valid: ['vectorized', 'bar_by_bar']")
 
         entries = signals == "buy"
         exits = signals == "sell"
@@ -71,6 +86,8 @@ class BacktestService:
             close,
             entries=entries,
             exits=exits,
+            size=position_size_pct,
+            size_type="percent",  # allocate fraction of current capital per trade
             fees=COMMISSION_PER_TRADE / close.mean(),
             slippage=SLIPPAGE_PCT,
             freq="D",
