@@ -53,6 +53,33 @@ def init_db(db_path: str = DEFAULT_DB_PATH) -> None:
                 PRIMARY KEY (usage_date, api_name)
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS positions (
+                symbol          TEXT NOT NULL,
+                qty             REAL NOT NULL,
+                avg_entry_price REAL NOT NULL,
+                side            TEXT NOT NULL,
+                PRIMARY KEY (symbol)
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS daily_loss (
+                trade_date  TEXT NOT NULL,
+                loss_usd    REAL NOT NULL DEFAULT 0.0,
+                PRIMARY KEY (trade_date)
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS pending_confirmations (
+                order_id    TEXT NOT NULL,
+                symbol      TEXT NOT NULL,
+                action      TEXT NOT NULL,
+                qty         REAL NOT NULL,
+                created_at  TEXT NOT NULL,
+                status      TEXT NOT NULL DEFAULT 'pending',
+                PRIMARY KEY (order_id)
+            )
+        """)
         conn.commit()
     finally:
         conn.close()
