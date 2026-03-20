@@ -16,6 +16,8 @@ export default function ExplorePage() {
 
   const handleSubmit = async (params: { symbol: string; start: string; end: string }) => {
     setBars([]);
+    setRsiResult(null);
+    setMaResult(null);
     setLoading(true);
     try {
       const [prices, rsi, ma] = await Promise.all([

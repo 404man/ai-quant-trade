@@ -21,6 +21,8 @@ function buildCurve(result: BacktestResponse): { date: string; value: number }[]
 export function EquityCurve({ result }: { result: BacktestResponse }) {
   const data = buildCurve(result);
   return (
+    <>
+    <p className="text-xs text-muted-foreground mb-2">收益曲线（模拟，基于年化收益线性推算）</p>
     <ResponsiveContainer width="100%" height={250}>
       <LineChart data={data}>
         <XAxis dataKey="date" tick={{ fontSize: 11 }} tickLine={false} />
@@ -35,5 +37,6 @@ export function EquityCurve({ result }: { result: BacktestResponse }) {
         <Line type="monotone" dataKey="value" stroke="#2563eb" dot={false} strokeWidth={2} />
       </LineChart>
     </ResponsiveContainer>
+    </>
   );
 }

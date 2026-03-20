@@ -51,5 +51,5 @@ export function PriceChart({ data }: Props) {
     );
   }
 
-  return <div ref={containerRef} className="w-full" />;
+  return <div ref={containerRef} className="w-full h-[400px]" />;
 }
