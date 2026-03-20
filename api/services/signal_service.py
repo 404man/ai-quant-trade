@@ -17,7 +17,7 @@ def _signal_to_score(signal: str) -> float:
 
 
 def _last_signal(signals: pd.Series) -> str:
-    """Return the most recent non-NaN signal value."""
+    """Return the last signal from the series (strategies always return buy/sell/hold)."""
     if len(signals) == 0:
         return "hold"
     return str(signals.iloc[-1])
@@ -74,7 +74,7 @@ class SignalService:
         else:
             action = "hold"
 
-        size = round(min(abs(score) * MAX_POSITION_PCT, MAX_POSITION_PCT), 4)
+        size = round(min(abs(score) * MAX_POSITION_PCT, MAX_POSITION_PCT), 4) if action != "hold" else 0.0
 
         return {
             "action": action,
