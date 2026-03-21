@@ -3,10 +3,11 @@ import math
 import uuid
 from datetime import date, datetime, timezone
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from api.services.data_service import DataService
+from api.services.gateway_manager import _manager
 from api.services.risk_service import RiskGate
 from api.services.trade_service import TradeService
 from db.schema import DEFAULT_DB_PATH, get_connection
@@ -25,6 +26,7 @@ class TradeRequest(BaseModel):
     capital: float       # total portfolio capital in $
     start: str           # YYYY-MM-DD for price fetch
     end: str             # YYYY-MM-DD for price fetch
+    gateway: str = "alpaca"
 
 
 def _insert_pending(order_id: str, symbol: str, action: str, qty: float, db_path: str = DEFAULT_DB_PATH) -> None:
@@ -91,7 +93,11 @@ async def post_trade(req: TradeRequest):
     outcome = await _poll_confirmation(order_id)
 
     if outcome == "confirmed":
-        alpaca_order_id = trade_svc.submit_order(req.symbol.upper(), req.action, qty)
+        try:
+            gw_result = _manager.route_order(req.gateway, req.symbol.upper(), req.action, qty)
+        except KeyError:
+            raise HTTPException(status_code=400, detail=f"Unknown gateway: {req.gateway}")
+        alpaca_order_id = gw_result.order_id
         # Record estimated loss as 0 at submission time; actual P&L tracked separately
         trade_svc.record_loss(today, 0.0)
         return {"status": "submitted", "order_id": alpaca_order_id, "qty": qty, "price_estimate": last_price}

@@ -35,15 +35,19 @@ def _make_risk_blocked(reason="Daily loss limit"):
 
 
 def test_trade_returns_200():
+    from api.gateways.base import OrderResult
     with patch("api.routes.trade.DataService") as MockData, \
          patch("api.routes.trade.RiskGate") as MockGate, \
          patch("api.routes.trade.TradeService") as MockTrade, \
+         patch("api.routes.trade._manager") as MockManager, \
          patch("api.routes.trade.send_confirmation"), \
          patch("api.routes.trade._poll_confirmation", return_value="confirmed"), \
          patch("api.routes.trade._insert_pending"):
         MockData.return_value.fetch.return_value = MOCK_PRICES
         MockGate.return_value.check.return_value = _make_risk_allowed()
-        MockTrade.return_value.submit_order.return_value = "ord-abc"
+        MockManager.route_order.return_value = OrderResult(
+            status="submitted", order_id="ord-abc", qty=1.0, price_estimate=253.0, reason=None
+        )
         MockTrade.return_value.get_daily_loss.return_value = 0.0
         MockTrade.return_value.get_position_count.return_value = 0
         resp = client.post("/trade", json=TRADE_BODY)
@@ -73,15 +77,19 @@ def test_trade_no_price_data_returns_error():
 
 
 def test_trade_confirmed_returns_submitted():
+    from api.gateways.base import OrderResult
     with patch("api.routes.trade.DataService") as MockData, \
          patch("api.routes.trade.RiskGate") as MockGate, \
          patch("api.routes.trade.TradeService") as MockTrade, \
+         patch("api.routes.trade._manager") as MockManager, \
          patch("api.routes.trade.send_confirmation"), \
          patch("api.routes.trade._poll_confirmation", return_value="confirmed"), \
          patch("api.routes.trade._insert_pending"):
         MockData.return_value.fetch.return_value = MOCK_PRICES
         MockGate.return_value.check.return_value = _make_risk_allowed()
-        MockTrade.return_value.submit_order.return_value = "ord-xyz"
+        MockManager.route_order.return_value = OrderResult(
+            status="submitted", order_id="ord-xyz", qty=1.0, price_estimate=253.0, reason=None
+        )
         MockTrade.return_value.get_daily_loss.return_value = 0.0
         MockTrade.return_value.get_position_count.return_value = 0
         resp = client.post("/trade", json=TRADE_BODY)
@@ -129,3 +137,68 @@ def test_trade_user_rejected_returns_cancelled():
 def test_trade_missing_fields_returns_422():
     resp = client.post("/trade", json={"symbol": "AAPL"})
     assert resp.status_code == 422
+
+
+def test_trade_default_gateway_uses_alpaca():
+    """POST /trade without gateway field defaults to 'alpaca'."""
+    from api.gateways.base import OrderResult
+    with patch("api.routes.trade.DataService") as MockData, \
+         patch("api.routes.trade.RiskGate") as MockGate, \
+         patch("api.routes.trade.TradeService") as MockTrade, \
+         patch("api.routes.trade._manager") as MockManager, \
+         patch("api.routes.trade.send_confirmation"), \
+         patch("api.routes.trade._poll_confirmation", return_value="confirmed"), \
+         patch("api.routes.trade._insert_pending"):
+        MockData.return_value.fetch.return_value = MOCK_PRICES
+        MockGate.return_value.check.return_value = _make_risk_allowed()
+        MockTrade.return_value.get_daily_loss.return_value = 0.0
+        MockTrade.return_value.get_position_count.return_value = 0
+        MockManager.route_order.return_value = OrderResult(
+            status="submitted", order_id="ord-default", qty=1.0, price_estimate=None, reason=None
+        )
+        resp = client.post("/trade", json=TRADE_BODY)  # no gateway field
+    MockManager.route_order.assert_called_once()
+    assert MockManager.route_order.call_args[0][0] == "alpaca"
+
+
+def test_trade_with_binance_gateway():
+    """POST /trade with gateway='binance' routes to Binance adapter."""
+    from api.gateways.base import OrderResult
+    with patch("api.routes.trade.DataService") as MockData, \
+         patch("api.routes.trade.RiskGate") as MockGate, \
+         patch("api.routes.trade.TradeService") as MockTrade, \
+         patch("api.routes.trade._manager") as MockManager, \
+         patch("api.routes.trade.send_confirmation"), \
+         patch("api.routes.trade._poll_confirmation", return_value="confirmed"), \
+         patch("api.routes.trade._insert_pending"):
+        MockData.return_value.fetch.return_value = MOCK_PRICES
+        MockGate.return_value.check.return_value = _make_risk_allowed()
+        MockTrade.return_value.get_daily_loss.return_value = 0.0
+        MockTrade.return_value.get_position_count.return_value = 0
+        MockManager.route_order.return_value = OrderResult(
+            status="submitted", order_id="binance-ord-1", qty=0.01, price_estimate=50000.0, reason=None
+        )
+        body = {**TRADE_BODY, "gateway": "binance"}
+        resp = client.post("/trade", json=body)
+    assert resp.json()["status"] == "submitted"
+    assert resp.json()["order_id"] == "binance-ord-1"
+    MockManager.route_order.assert_called_once()
+    assert MockManager.route_order.call_args[0][0] == "binance"
+
+
+def test_trade_unknown_gateway_returns_400():
+    with patch("api.routes.trade.DataService") as MockData, \
+         patch("api.routes.trade.RiskGate") as MockGate, \
+         patch("api.routes.trade.TradeService") as MockTrade, \
+         patch("api.routes.trade._manager") as MockManager, \
+         patch("api.routes.trade.send_confirmation"), \
+         patch("api.routes.trade._poll_confirmation", return_value="confirmed"), \
+         patch("api.routes.trade._insert_pending"):
+        MockData.return_value.fetch.return_value = MOCK_PRICES
+        MockGate.return_value.check.return_value = _make_risk_allowed()
+        MockTrade.return_value.get_daily_loss.return_value = 0.0
+        MockTrade.return_value.get_position_count.return_value = 0
+        MockManager.route_order.side_effect = KeyError("Unknown gateway: bogus")
+        body = {**TRADE_BODY, "gateway": "bogus"}
+        resp = client.post("/trade", json=body)
+    assert resp.status_code == 400
