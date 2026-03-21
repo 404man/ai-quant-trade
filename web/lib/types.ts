@@ -55,3 +55,11 @@ export interface ApiLogEntry {
   status: number;
   duration_ms: number;
 }
+
+export interface GatewayConfig {
+  name: string;
+  label: string;
+  enabled: boolean;
+  status: "connected" | "disconnected" | "error";
+  config: Record<string, string>;
+}

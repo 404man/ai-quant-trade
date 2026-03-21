@@ -1,6 +1,7 @@
 import type {
   BacktestResponse,
   ConfirmationRecord,
+  GatewayConfig,
   PriceBar,
   SignalResponse,
   TradeResponse,
@@ -78,4 +79,45 @@ export async function submitTrade(body: {
 
 export async function fetchConfirmations(): Promise<ConfirmationRecord[]> {
   return apiFetch<ConfirmationRecord[]>("/confirmations");
+}
+
+export async function fetchGateways(): Promise<GatewayConfig[]> {
+  return apiFetch<GatewayConfig[]>("/gateways");
+}
+
+export async function saveGateway(
+  name: string,
+  config: Record<string, string>,
+  enabled: boolean
+): Promise<GatewayConfig> {
+  return apiFetch<GatewayConfig>(`/gateways/${name}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ config, enabled }),
+  });
+}
+
+export async function connectGateway(
+  name: string
+): Promise<{ status: string; detail?: string }> {
+  return apiFetch<{ status: string; detail?: string }>(
+    `/gateways/${name}/connect`,
+    { method: "POST" }
+  );
+}
+
+export async function disconnectGateway(
+  name: string
+): Promise<{ status: string }> {
+  return apiFetch<{ status: string }>(`/gateways/${name}/disconnect`, {
+    method: "POST",
+  });
+}
+
+export async function fetchGatewayStatus(
+  name: string
+): Promise<{ name: string; status: string }> {
+  return apiFetch<{ name: string; status: string }>(
+    `/gateways/${name}/status`
+  );
 }

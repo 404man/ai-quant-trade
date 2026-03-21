@@ -9,6 +9,7 @@ const navItems = [
   { href: "/terminal",   label: "交易终端" },
   { href: "/explore",    label: "数据探索" },
   { href: "/messages",   label: "消息中心" },
+  { href: "/settings",   label: "设置" },
 ];
 
 export function Sidebar() {
