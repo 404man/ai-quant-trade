@@ -8,8 +8,10 @@ _GATEWAY_CLASSES: dict[str, type[BaseGateway]] = {}
 def _register_gateways():
     if _GATEWAY_CLASSES:
         return
+    from api.gateways.alpaca import AlpacaGateway
     from api.gateways.futu import FutuGateway
     from api.gateways.ib import IBGateway
+    _GATEWAY_CLASSES["alpaca"] = AlpacaGateway
     _GATEWAY_CLASSES["futu"] = FutuGateway
     _GATEWAY_CLASSES["ib"] = IBGateway
 
