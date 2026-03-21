@@ -114,8 +114,9 @@ class BaseGateway(ABC):
 
 **单例实例化：**
 - 模块级别创建：`_manager = GatewayManager()`（无参数构造）
-- `api/main.py` 的 FastAPI `lifespan` 启动阶段调用 `_manager.load_from_db(DEFAULT_DB_PATH)` 加载配置
+- `api/main.py` 的 FastAPI `lifespan` 启动阶段，在现有 `TradeService().sync_positions()` 之后，先调用 `init_db(DEFAULT_DB_PATH)`（确保表已创建），再调用 `_manager.load_from_db(DEFAULT_DB_PATH)` 加载配置
 - 路由文件通过 `from api.services.gateway_manager import _manager` 直接引用
+- 路由文件通过 `from db.schema import DEFAULT_DB_PATH` 获取 db_path，直接传入 manager 方法
 
 **方法签名：**
 
@@ -132,9 +133,24 @@ class BaseGateway(ABC):
 **`connect()` 流程：**
 1. 从 DB 读取该网关的 `config_json`（内部读取，不需要调用方传入）
 2. 调用 `gateway.connect(config)`
-3. 成功：更新内存 `status='connected'`，写回 DB；失败：更新为 `'error'`，写回 DB，re-raise 异常
+3. 成功：更新内存 `status='connected'`，写回 DB
+4. 失败：更新内存 `status='error'`，写回 DB，re-raise 异常（由路由层 catch）
 
-**`route_order()` 异常：** 若 `name` 不在已注册网关中，抛出 `KeyError`，由路由层转为 HTTP 400。
+**路由层 connect 错误处理（`api/routes/gateways.py`）：**
+```python
+@router.post("/gateways/{name}/connect")
+def connect_gateway(name: str):
+    try:
+        status = _manager.connect(name, DEFAULT_DB_PATH)
+        return {"status": status}
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Unknown gateway: {name}")
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
+```
+`GET /gateways/{name}/status` 和 `POST /gateways/{name}/disconnect` 同样对 `KeyError` 返回 404。
+
+**`route_order()` 异常：** 若 `name` 不在已注册网关中，抛出 `KeyError`。`trade.py` 路由在调用 `_manager.route_order()` 时用 `try/except KeyError` 捕获，返回 HTTP 400：`{"detail": "Unknown gateway: {name}"}`。
 
 **状态持久化：** `connect()` / `disconnect()` 成功或失败后均将 status 写回 DB，重启后保留上次状态（仅供展示，实际连接需重新建立）。
 
@@ -165,7 +181,7 @@ CREATE TABLE IF NOT EXISTS gateway_configs (
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/gateways` | 返回所有网关列表（含状态，secret 脱敏） |
-| PUT | `/gateways/{name}` | 保存网关配置，返回更新后的网关信息 |
+| PUT | `/gateways/{name}` | 保存网关配置，返回更新后的 `GatewayConfig`（调用 `save_config()` 后从 `get_all()` 取回对应条目返回） |
 | POST | `/gateways/{name}/connect` | 触发连接，返回 `{"status": "connected"}` 或错误 |
 | POST | `/gateways/{name}/disconnect` | 断开连接，返回 `{"status": "disconnected"}` |
 | GET | `/gateways/{name}/status` | 返回 `{"name": "alpaca", "status": "connected"}` |
@@ -203,9 +219,16 @@ class GatewayUpdateRequest(BaseModel):
 **修改 `POST /trade`：**
 - 在现有 `TradeRequest` Pydantic 模型中新增可选字段 `gateway: str = "alpaca"`
 - 现有的风险检查（`RiskGate`）、Telegram 确认流程、`record_loss()`、`_insert_pending()` 逻辑**全部保留不变**
-- 仅将第 94 行的 `trade_svc.submit_order(...)` 替换为 `_manager.route_order(req.gateway, req.symbol.upper(), req.action, qty).order_id`
-- `AlpacaGateway.send_order()` 内部使用 `TradeService().submit_order()` 实现（迁移，不重写逻辑）
-- 若 `gateway` 不存在于 GatewayManager，返回 HTTP 400：`{"detail": "Unknown gateway: {name}"}`
+- 仅将原来的 `alpaca_order_id = trade_svc.submit_order(...)` 替换为：
+  ```python
+  try:
+      result = _manager.route_order(req.gateway, req.symbol.upper(), req.action, qty)
+  except KeyError:
+      raise HTTPException(status_code=400, detail=f"Unknown gateway: {req.gateway}")
+  alpaca_order_id = result.order_id  # may be None for non-Alpaca gateways
+  ```
+- `AlpacaGateway.send_order()` 内部使用 `TradeService().submit_order()` 实现，保证返回非 None 的 `order_id`
+- 非 Alpaca 网关的 `OrderResult.order_id` 可为 None，响应中 `order_id` 字段随之为 null（前端已有 null guard）
 - 默认值 `"alpaca"` 保持向后兼容，现有调用无需修改
 
 ### 6. 新增依赖
