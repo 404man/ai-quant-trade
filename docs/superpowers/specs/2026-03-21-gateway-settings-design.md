@@ -114,7 +114,10 @@ class BaseGateway(ABC):
 
 **单例实例化：**
 - 模块级别创建：`_manager = GatewayManager()`（无参数构造）
-- `api/main.py` 的 FastAPI `lifespan` 启动阶段，在现有 `TradeService().sync_positions()` 之后，先调用 `init_db(DEFAULT_DB_PATH)`（确保表已创建），再调用 `_manager.load_from_db(DEFAULT_DB_PATH)` 加载配置
+- `api/main.py` 的 FastAPI `lifespan` 启动阶段，按以下顺序执行：
+  1. `init_db(DEFAULT_DB_PATH)` — 确保所有表（包括 `gateway_configs`）已创建
+  2. `_manager.load_from_db(DEFAULT_DB_PATH)` — 加载网关配置
+  3. 现有的 `TradeService().sync_positions()`（顺序不变，放在最后）
 - 路由文件通过 `from api.services.gateway_manager import _manager` 直接引用
 - 路由文件通过 `from db.schema import DEFAULT_DB_PATH` 获取 db_path，直接传入 manager 方法
 
@@ -221,6 +224,7 @@ class GatewayUpdateRequest(BaseModel):
 - 现有的风险检查（`RiskGate`）、Telegram 确认流程、`record_loss()`、`_insert_pending()` 逻辑**全部保留不变**
 - 仅将原来的 `alpaca_order_id = trade_svc.submit_order(...)` 替换为：
   ```python
+  from api.services.gateway_manager import _manager  # 新增 import
   try:
       result = _manager.route_order(req.gateway, req.symbol.upper(), req.action, qty)
   except KeyError:
