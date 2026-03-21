@@ -27,7 +27,7 @@ class BinanceGateway(BaseGateway):
         result = self._exchange.create_market_order(symbol, action.lower(), qty)
         return OrderResult(
             status="submitted",
-            order_id=str(result.get("id")),
+            order_id=str(result["id"]) if result.get("id") is not None else None,
             qty=qty,
             price_estimate=result.get("price"),
             reason=None,
