@@ -9,9 +9,11 @@ def _register_gateways():
     if _GATEWAY_CLASSES:
         return
     from api.gateways.alpaca import AlpacaGateway
+    from api.gateways.binance import BinanceGateway
     from api.gateways.futu import FutuGateway
     from api.gateways.ib import IBGateway
     _GATEWAY_CLASSES["alpaca"] = AlpacaGateway
+    _GATEWAY_CLASSES["binance"] = BinanceGateway
     _GATEWAY_CLASSES["futu"] = FutuGateway
     _GATEWAY_CLASSES["ib"] = IBGateway
 
