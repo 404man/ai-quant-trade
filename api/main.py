@@ -6,11 +6,16 @@ from api.routes.sentiment import router as sentiment_router
 from api.routes.signal import router as signal_router
 from api.routes.trade import router as trade_router
 from api.routes.confirmations import router as confirmations_router
+from api.routes.gateways import router as gateways_router
+from db.schema import init_db, DEFAULT_DB_PATH
+from api.services.gateway_manager import _manager
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: sync positions from Alpaca (no-op if creds not set)
+    # Startup: init DB, load gateways, sync positions
+    init_db(DEFAULT_DB_PATH)
+    _manager.load_from_db(DEFAULT_DB_PATH)
     try:
         from api.services.trade_service import TradeService
         TradeService().sync_positions()
@@ -27,6 +32,7 @@ app.include_router(sentiment_router)
 app.include_router(signal_router)
 app.include_router(trade_router)
 app.include_router(confirmations_router)
+app.include_router(gateways_router)
 
 
 @app.get("/health")
