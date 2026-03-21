@@ -80,6 +80,19 @@ def init_db(db_path: str = DEFAULT_DB_PATH) -> None:
                 PRIMARY KEY (order_id)
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS gateway_configs (
+                name        TEXT PRIMARY KEY,
+                config_json TEXT NOT NULL DEFAULT '{}',
+                enabled     INTEGER NOT NULL DEFAULT 0,
+                status      TEXT NOT NULL DEFAULT 'disconnected'
+            )
+        """)
+        for gw_name in ("alpaca", "binance", "futu", "ib"):
+            conn.execute(
+                "INSERT OR IGNORE INTO gateway_configs (name) VALUES (?)",
+                (gw_name,),
+            )
         conn.commit()
     finally:
         conn.close()
