@@ -54,6 +54,17 @@ class TradeService:
         finally:
             conn.close()
 
+    def get_positions(self) -> list[dict]:
+        """Return all open positions from local DB."""
+        conn = get_connection(self.db_path)
+        try:
+            rows = conn.execute(
+                "SELECT symbol, qty, avg_entry_price, side FROM positions"
+            ).fetchall()
+            return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
     # --- Orders ---
 
     def submit_order(self, symbol: str, action: str, qty: float) -> str:

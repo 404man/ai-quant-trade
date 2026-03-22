@@ -9,6 +9,7 @@ from api.routes.signal import router as signal_router
 from api.routes.trade import router as trade_router
 from api.routes.confirmations import router as confirmations_router
 from api.routes.gateways import router as gateways_router
+from api.routes.positions import router as positions_router
 from db.schema import init_db, DEFAULT_DB_PATH
 from api.services.gateway_manager import _manager
 
@@ -41,6 +42,7 @@ app.include_router(signal_router, dependencies=_auth)
 app.include_router(trade_router, dependencies=_auth)
 app.include_router(confirmations_router, dependencies=_auth)
 app.include_router(gateways_router, dependencies=_auth)
+app.include_router(positions_router, dependencies=_auth)
 
 
 @app.get("/health")
