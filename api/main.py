@@ -1,5 +1,7 @@
+# api/main.py
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
+from api.auth import verify_api_key
 from api.routes.data import router as data_router
 from api.routes.backtest import router as backtest_router
 from api.routes.sentiment import router as sentiment_router
@@ -24,17 +26,24 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="AI Quant System", version="0.1.0", lifespan=lifespan)
+app = FastAPI(
+    title="AI Quant System",
+    version="0.1.0",
+    lifespan=lifespan,
+)
 
-app.include_router(data_router)
-app.include_router(backtest_router)
-app.include_router(sentiment_router)
-app.include_router(signal_router)
-app.include_router(trade_router)
-app.include_router(confirmations_router)
-app.include_router(gateways_router)
+_auth = [Depends(verify_api_key)]
+
+app.include_router(data_router, dependencies=_auth)
+app.include_router(backtest_router, dependencies=_auth)
+app.include_router(sentiment_router, dependencies=_auth)
+app.include_router(signal_router, dependencies=_auth)
+app.include_router(trade_router, dependencies=_auth)
+app.include_router(confirmations_router, dependencies=_auth)
+app.include_router(gateways_router, dependencies=_auth)
 
 
 @app.get("/health")
 def health():
+    """Health check — no auth required."""
     return {"status": "ok"}
