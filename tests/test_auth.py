@@ -1,6 +1,5 @@
 # tests/test_auth.py
 import os
-import pytest
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 from api.main import app
