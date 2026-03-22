@@ -79,7 +79,7 @@ openclaw/skills/
 
 - **触发词**：信号、signal
 - **API**：`GET /signal?symbol=AAPL&start=<30天前>&end=<今天>&capital=500`
-- **参数**：symbol（必填）、capital（默认 500）
+- **参数**：symbol（必填）、capital（默认 500）、start/end（agent 需动态计算：start = 30 天前，end = 今天，格式 YYYY-MM-DD）
 - **响应解读**：翻译 action（buy/sell/hold），如被风控拦截说明原因
 
 #### stock_positions
@@ -113,13 +113,26 @@ When the user asks to backtest a stock (e.g. "回测 AAPL", "backtest TSLA rsi")
 
 ### 新增端点：GET /positions
 
+**前置：新增 `TradeService.get_positions()` 方法**，从 `positions` 表读取持仓列表：
+
+```python
+# 在 api/services/trade_service.py 中新增
+def get_positions(self) -> list[dict]:
+    conn = get_connection(self.db_path)
+    try:
+        rows = conn.execute("SELECT symbol, qty, avg_entry_price, side FROM positions").fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+```
+
 **文件**：`api/routes/positions.py`
 
 ```python
 @router.get("/positions")
 def get_positions():
     trade_svc = TradeService()
-    positions = trade_svc.get_positions()  # 现有方法
+    positions = trade_svc.get_positions()
     return {
         "positions": positions,
         "count": len(positions),
@@ -130,7 +143,7 @@ def get_positions():
 ```json
 {
   "positions": [
-    {"symbol": "AAPL", "qty": 5, "side": "buy", "entry_price": 178.50}
+    {"symbol": "AAPL", "qty": 5, "side": "buy", "avg_entry_price": 178.50}
   ],
   "count": 1
 }
@@ -196,7 +209,7 @@ class WebhookService:
 
 #### 1. 交易信号推送
 
-- **触发时机**：`GET /signal` 返回 action 为 buy 或 sell 时
+- **触发时机**：`GET /signal` 最终返回 action 为 buy 或 sell 时（风控拦截后变为 hold 的不推送）
 - **触发点**：`api/routes/signal.py`，在返回响应前调用
 - **推送内容**：`{symbol, action, size, score}`
 - **消息格式**：`"交易信号：AAPL 买入，仓位 5%，评分 0.78"`
@@ -225,16 +238,26 @@ class WebhookService:
 
 **文件**：`api/routes/daily_summary.py`
 
+账户余额通过 Alpaca API (`client.get_account().equity`) 获取。如果 Alpaca 不可用，省略余额字段。
+
 ```python
 @router.post("/daily-summary")
 def post_daily_summary():
     trade_svc = TradeService()
     positions = trade_svc.get_positions()
     daily_loss = trade_svc.get_daily_loss(date.today().isoformat())
+    # 尝试获取账户余额
+    account_balance = None
+    try:
+        account = trade_svc._get_client().get_account()
+        account_balance = float(account.equity)
+    except Exception:
+        pass
     webhook = WebhookService()
     webhook.push("daily_summary", {
         "positions": positions,
         "daily_pnl": -daily_loss,
+        "account_balance": account_balance,
         "date": date.today().isoformat(),
     })
     return {"status": "sent"}
@@ -280,10 +303,11 @@ def post_daily_summary():
 | 文件 | 变更 |
 |------|------|
 | `api/main.py` | 全局认证依赖 + 注册 positions/daily_summary 路由 |
+| `api/services/trade_service.py` | 新增 get_positions() 方法 |
 | `api/routes/signal.py` | buy/sell 时触发信号推送 |
 | `api/routes/trade.py` | 风控警报 + 订单状态推送 |
 | `.env.example` | 新增 OPENCLAW_HOOK_URL、OPENCLAW_HOOK_TOKEN |
-| `requirements.txt` | 新增 httpx |
+| `requirements.txt` | httpx 已存在，无需修改 |
 
 ---
 
