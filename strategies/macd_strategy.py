@@ -1,7 +1,7 @@
 import pandas as pd
 from strategies.factors.macd_factor import compute as macd_compute
 
-MACD_MIN_BARS = 35
+MACD_MIN_BARS = 35  # slowperiod(26) + signalperiod(9) - 1
 
 
 def generate_signals(prices: pd.Series) -> pd.Series:
@@ -15,8 +15,8 @@ def generate_signals(prices: pd.Series) -> pd.Series:
     macd_line, signal_line = macd_compute(prices)
     prev_macd = macd_line.shift(1)
     prev_signal = signal_line.shift(1)
-    crossover = (macd_line > signal_line) & (prev_macd.isna() | (prev_macd <= prev_signal))
-    crossunder = (macd_line < signal_line) & (prev_macd.isna() | (prev_macd >= prev_signal))
+    crossover = prev_macd.notna() & (prev_macd <= prev_signal) & (macd_line > signal_line)
+    crossunder = prev_macd.notna() & (prev_macd >= prev_signal) & (macd_line < signal_line)
     signals[crossover] = "buy"
     signals[crossunder] = "sell"
     return signals
