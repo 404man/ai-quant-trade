@@ -12,6 +12,22 @@ function fmt(value: number, key: MetricKey): string {
   return String(value);
 }
 
+function valueColor(value: number, key: MetricKey): string {
+  if (key === "annual_return") return value > 0 ? "text-green-500" : "text-red-500";
+  if (key === "max_drawdown") return "text-red-500";
+  return "";
+}
+
+function SharpeBadge({ value }: { value: number }) {
+  if (value >= 2.0) {
+    return <span className="ml-2 text-xs font-medium px-1.5 py-0.5 rounded bg-green-100 text-green-700">优秀</span>;
+  }
+  if (value >= 1.0) {
+    return <span className="ml-2 text-xs font-medium px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700">良好</span>;
+  }
+  return null;
+}
+
 export function BacktestResults({ result }: { result: BacktestResponse }) {
   const metrics = [
     { label: "Sharpe Ratio", key: "sharpe_ratio" },
@@ -29,7 +45,10 @@ export function BacktestResults({ result }: { result: BacktestResponse }) {
             <CardTitle className="text-xs text-muted-foreground font-normal">{label}</CardTitle>
           </CardHeader>
           <CardContent className="pb-4 px-4">
-            <p className="text-xl font-semibold">{fmt(result[key], key)}</p>
+            <p className={`text-xl font-semibold flex items-center ${valueColor(result[key], key)}`}>
+              {fmt(result[key], key)}
+              {key === "sharpe_ratio" && <SharpeBadge value={result[key]} />}
+            </p>
           </CardContent>
         </Card>
       ))}
