@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from api.services.data_service import DataService
 from api.services.signal_service import SignalService
 from api.services.risk_service import RiskGate
+from api.services.webhook_service import WebhookService
 
 router = APIRouter()
 
@@ -41,9 +42,20 @@ def get_signal(
             risk_blocked = True
             risk_reason = risk_result.reason
 
-    return {
+    response = {
         "symbol": symbol.upper(),
         **signal,
         "risk_blocked": risk_blocked,
         "risk_reason": risk_reason,
     }
+
+    # Push signal webhook if actionable (buy/sell, not blocked to hold)
+    if response["action"] in ("buy", "sell"):
+        WebhookService().push("signal", {
+            "symbol": response["symbol"],
+            "action": response["action"],
+            "size": response["size"],
+            "score": response["score"],
+        })
+
+    return response

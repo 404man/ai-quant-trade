@@ -10,6 +10,7 @@ from api.services.data_service import DataService
 from api.services.gateway_manager import _manager
 from api.services.risk_service import RiskGate
 from api.services.trade_service import TradeService
+from api.services.webhook_service import WebhookService
 from db.schema import DEFAULT_DB_PATH, get_connection
 from tg.handlers import get_confirmation_status, send_cancellation_notice, send_confirmation
 
@@ -78,6 +79,12 @@ async def post_trade(req: TradeRequest):
         proposed_trade_value=proposed_value,
     )
     if not risk_result.allowed:
+        WebhookService().push("risk_alert", {
+            "symbol": req.symbol.upper(),
+            "reason": risk_result.reason,
+            "capital": req.capital,
+            "daily_loss": daily_loss,
+        })
         return {"status": "blocked", "reason": risk_result.reason}
 
     order_id = str(uuid.uuid4())
@@ -100,8 +107,25 @@ async def post_trade(req: TradeRequest):
         alpaca_order_id = gw_result.order_id
         # Record estimated loss as 0 at submission time; actual P&L tracked separately
         trade_svc.record_loss(today, 0.0)
+        WebhookService().push("order_status", {
+            "order_id": alpaca_order_id,
+            "symbol": req.symbol.upper(),
+            "action": req.action,
+            "status": "submitted",
+            "qty": qty,
+            "price_estimate": last_price,
+        })
         return {"status": "submitted", "order_id": alpaca_order_id, "qty": qty, "price_estimate": last_price}
 
     reason = "user_rejected" if outcome == "cancelled" else "timeout"
     send_cancellation_notice(order_id=order_id, symbol=req.symbol.upper(), reason=reason)
+    WebhookService().push("order_status", {
+        "order_id": order_id,
+        "symbol": req.symbol.upper(),
+        "action": req.action,
+        "status": "cancelled",
+        "qty": qty,
+        "price_estimate": last_price,
+        "reason": reason,
+    })
     return {"status": "cancelled", "reason": reason}
