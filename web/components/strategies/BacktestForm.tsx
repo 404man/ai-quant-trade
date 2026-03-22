@@ -52,6 +52,7 @@ export function BacktestForm({ onSubmit, loading }: Props) {
           <SelectContent>
             <SelectItem value="rsi">RSI</SelectItem>
             <SelectItem value="ma">MA 交叉</SelectItem>
+            <SelectItem value="macd">MACD</SelectItem>
           </SelectContent>
         </Select>
       </div>
