@@ -7,6 +7,9 @@ router = APIRouter()
 
 @router.get("/backtest")
 def run_backtest(symbol: str, strategy: str, start: str, end: str):
+    if start >= end:
+        raise HTTPException(status_code=400, detail=f"start must be before end (got {start} >= {end})")
+
     data_svc = DataService()
     backtest_svc = BacktestService()
 

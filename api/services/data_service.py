@@ -1,7 +1,12 @@
+import os
+import requests
 import yfinance as yf
 import pandas as pd
 from datetime import date as _date
 from db.schema import get_connection, init_db, DEFAULT_DB_PATH
+
+_DATA_SOURCE = os.getenv("DATA_SOURCE", "yfinance").lower()
+_POLYGON_KEY = os.getenv("POLYGON_API_KEY", "")
 
 
 class DataService:
@@ -12,7 +17,7 @@ class DataService:
     def fetch(self, symbol: str, start: str, end: str) -> list[dict]:
         """
         Returns day-bar data for symbol in [start, end] date range.
-        Reads from SQLite cache first; fetches from yfinance on cache miss.
+        Reads from SQLite cache first; fetches from configured data source on cache miss.
         """
         symbol = symbol.upper()
 
@@ -25,10 +30,13 @@ class DataService:
         if self._is_range_cached(symbol, start, end):
             return self._read_cache(symbol, start, end)
 
-        raw = self._fetch_yfinance(symbol, start, end)
+        if _DATA_SOURCE == "polygon" and _POLYGON_KEY:
+            raw = self._fetch_polygon(symbol, start, end)
+        else:
+            raw = self._fetch_yfinance(symbol, start, end)
+
         if raw:
             self._write_cache(symbol, raw)
-            self._record_cache_range(symbol, start, end)
         return raw
 
     def _is_range_cached(self, symbol: str, start: str, end: str) -> bool:
@@ -44,17 +52,6 @@ class DataService:
         finally:
             conn.close()
 
-    def _record_cache_range(self, symbol: str, start: str, end: str) -> None:
-        conn = get_connection(self.db_path)
-        try:
-            conn.execute(
-                "INSERT OR REPLACE INTO cache_ranges (symbol, start, end) VALUES (?, ?, ?)",
-                (symbol, start, end),
-            )
-            conn.commit()
-        finally:
-            conn.close()
-
     def _read_cache(self, symbol: str, start: str, end: str) -> list[dict]:
         conn = get_connection(self.db_path)
         try:
@@ -67,6 +64,29 @@ class DataService:
         finally:
             conn.close()
         return rows
+
+    def _fetch_polygon(self, symbol: str, start: str, end: str) -> list[dict]:
+        url = (
+            f"https://api.polygon.io/v2/aggs/ticker/{symbol}/range/1/day"
+            f"/{start}/{end}?adjusted=true&sort=asc&limit=50000&apiKey={_POLYGON_KEY}"
+        )
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        results = data.get("results") or []
+        records = []
+        for r in results:
+            # t is millisecond timestamp
+            date_str = _date.fromtimestamp(r["t"] / 1000).isoformat()
+            records.append({
+                "date": date_str,
+                "open": float(r["o"]),
+                "high": float(r["h"]),
+                "low": float(r["l"]),
+                "close": float(r["c"]),
+                "volume": int(r["v"]),
+            })
+        return records
 
     def _fetch_yfinance(self, symbol: str, start: str, end: str) -> list[dict]:
         df = yf.download(symbol, start=start, end=end, progress=False, auto_adjust=True)
