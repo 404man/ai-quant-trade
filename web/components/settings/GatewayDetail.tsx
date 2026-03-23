@@ -137,7 +137,7 @@ export function GatewayDetail({ gateway, onUpdated }: Props) {
       </div>
 
       {STUB_GATEWAYS.has(gateway.name) && (
-        <p className="text-sm text-amber-500 bg-amber-950/30 rounded-md px-3 py-2">
+        <p className="text-sm text-red-500 bg-amber-950/30 rounded-md px-3 py-2">
           {STUB_MESSAGES[gateway.name]}
         </p>
       )}
