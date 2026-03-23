@@ -34,11 +34,13 @@ class DataService:
     def _is_range_cached(self, symbol: str, start: str, end: str) -> bool:
         conn = get_connection(self.db_path)
         try:
-            cursor = conn.execute(
-                "SELECT 1 FROM cache_ranges WHERE symbol = ? AND start = ? AND end = ?",
-                (symbol, start, end),
-            )
-            return cursor.fetchone() is not None
+            row = conn.execute(
+                "SELECT MIN(date), MAX(date) FROM price_cache WHERE symbol = ?",
+                (symbol,),
+            ).fetchone()
+            if row is None or row[0] is None:
+                return False
+            return row[0] <= start and row[1] >= end
         finally:
             conn.close()
 

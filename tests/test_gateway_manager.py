@@ -65,7 +65,7 @@ def test_route_order_unknown_gateway(db_path):
     from api.services.gateway_manager import GatewayManager
     mgr = GatewayManager()
     mgr.load_from_db(db_path)
-    with pytest.raises(KeyError):
+    with pytest.raises(ValueError):
         mgr.route_order("nonexistent", "AAPL", "buy", 1.0)
 
 

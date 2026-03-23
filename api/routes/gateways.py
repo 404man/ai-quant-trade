@@ -33,7 +33,7 @@ def connect_gateway(name: str):
     try:
         status = _manager.connect(name, DEFAULT_DB_PATH)
         return {"status": status}
-    except KeyError:
+    except ValueError:
         raise HTTPException(status_code=404, detail=f"Unknown gateway: {name}")
     except Exception as e:
         return {"status": "error", "detail": str(e)}
@@ -44,7 +44,7 @@ def disconnect_gateway(name: str):
     try:
         status = _manager.disconnect(name, DEFAULT_DB_PATH)
         return {"status": status}
-    except KeyError:
+    except ValueError:
         raise HTTPException(status_code=404, detail=f"Unknown gateway: {name}")
     except Exception as e:
         return {"status": "error", "detail": str(e)}
@@ -55,5 +55,5 @@ def get_gateway_status(name: str):
     try:
         status = _manager.get_status(name)
         return {"name": name, "status": status}
-    except KeyError:
+    except (KeyError, ValueError):
         raise HTTPException(status_code=404, detail=f"Unknown gateway: {name}")
