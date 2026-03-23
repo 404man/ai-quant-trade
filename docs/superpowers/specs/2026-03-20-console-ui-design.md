@@ -58,7 +58,8 @@
 - 经纪商切换：Alpaca Paper / Alpaca Live（badge 显示当前模式，切换时更新本地状态）
 - 下单表单：symbol、买/卖、股数、预估金额
 - 提交后展示订单结果：submitted（含 order_id）/ blocked（含原因）/ cancelled（含原因）
-
+- 支持国内外主流交易所（如 CTP、富途、币安、Interactive Brokers等）等40+ 交易接口 设置，提供统一的 Gateway 接口，便于对接不同交易系统。
+可参照 开源项目 https://github.com/vnpy/vnpy， 有交易所接口内容
 **使用端点：** `POST /trade`
 
 ---
