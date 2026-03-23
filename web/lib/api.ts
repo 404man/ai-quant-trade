@@ -5,6 +5,7 @@ import type {
   PriceBar,
   SignalResponse,
   TradeResponse,
+  WatchlistItem,
 } from "./types";
 
 const BASE_URL =
@@ -120,4 +121,27 @@ export async function fetchGatewayStatus(
   return apiFetch<{ name: string; status: string }>(
     `/gateways/${name}/status`
   );
+}
+
+export async function fetchWatchlist(): Promise<WatchlistItem[]> {
+  return apiFetch<WatchlistItem[]>("/watchlist");
+}
+
+export async function addToWatchlist(
+  symbol: string,
+  notes?: string
+): Promise<{ symbol: string; status: string }> {
+  return apiFetch<{ symbol: string; status: string }>("/watchlist", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ symbol, notes: notes ?? "" }),
+  });
+}
+
+export async function removeFromWatchlist(
+  symbol: string
+): Promise<{ symbol: string; status: string }> {
+  return apiFetch<{ symbol: string; status: string }>(`/watchlist/${symbol}`, {
+    method: "DELETE",
+  });
 }

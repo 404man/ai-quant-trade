@@ -93,6 +93,13 @@ def init_db(db_path: str = DEFAULT_DB_PATH) -> None:
                 "INSERT OR IGNORE INTO gateway_configs (name) VALUES (?)",
                 (gw_name,),
             )
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS watchlist (
+                symbol    TEXT PRIMARY KEY,
+                notes     TEXT NOT NULL DEFAULT '',
+                added_at  TEXT NOT NULL
+            )
+        """)
         conn.commit()
     finally:
         conn.close()

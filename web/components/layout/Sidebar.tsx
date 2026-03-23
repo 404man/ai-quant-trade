@@ -5,6 +5,7 @@ import { ApiStatus } from "./ApiStatus";
 
 const navItems = [
   { href: "/live",       label: "实盘" },
+  { href: "/watchlist",  label: "自选" },
   { href: "/strategies", label: "策略库" },
   { href: "/terminal",   label: "交易终端" },
   { href: "/explore",    label: "数据探索" },

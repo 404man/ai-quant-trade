@@ -15,13 +15,13 @@ MOCK_PRICES = [
 MOCK_SIGNAL_BUY = {
     "action": "buy", "score": 0.78, "size": 0.078,
     "rsi_signal": "buy", "ma_signal": "hold",
-    "sentiment": "bullish", "sentiment_confidence": 0.72,
+    "macd_signal": "hold", "volume_ratio": 1.2,
 }
 
 MOCK_SIGNAL_HOLD = {
     "action": "hold", "score": 0.0, "size": 0.0,
     "rsi_signal": "hold", "ma_signal": "hold",
-    "sentiment": "neutral", "sentiment_confidence": 0.5,
+    "macd_signal": "hold", "volume_ratio": 1.0,
 }
 
 

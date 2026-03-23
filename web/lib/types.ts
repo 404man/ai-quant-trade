@@ -26,8 +26,8 @@ export interface SignalResponse {
   size: number;
   rsi_signal: string;
   ma_signal: string;
-  sentiment: string;
-  sentiment_confidence: number;
+  macd_signal: string;
+  volume_ratio: number;
   risk_blocked: boolean;
   risk_reason: string | null;
 }
@@ -62,4 +62,10 @@ export interface GatewayConfig {
   enabled: boolean;
   status: "connected" | "disconnected" | "error";
   config: Record<string, string>;
+}
+
+export interface WatchlistItem {
+  symbol: string;
+  notes: string;
+  added_at: string;
 }

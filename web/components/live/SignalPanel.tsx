@@ -117,8 +117,8 @@ export function SignalPanel() {
             <dl className="grid grid-cols-2 gap-x-8 gap-y-1 text-sm sm:grid-cols-4">
               <div><dt className="text-muted-foreground">RSI信号</dt><dd>{signal.rsi_signal}</dd></div>
               <div><dt className="text-muted-foreground">MA信号</dt><dd>{signal.ma_signal}</dd></div>
-              <div><dt className="text-muted-foreground">情绪</dt><dd>{signal.sentiment}</dd></div>
-              <div><dt className="text-muted-foreground">置信度</dt><dd>{signal.sentiment_confidence}</dd></div>
+              <div><dt className="text-muted-foreground">MACD信号</dt><dd>{signal.macd_signal}</dd></div>
+              <div><dt className="text-muted-foreground">成交量比</dt><dd>{signal.volume_ratio.toFixed(2)}</dd></div>
             </dl>
             {signal.action !== "hold" && !signal.risk_blocked && (
               <Button onClick={handleTrade} disabled={trading} variant="default">

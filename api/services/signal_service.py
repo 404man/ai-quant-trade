@@ -3,13 +3,10 @@ from strategies.rsi_strategy import generate_signals as rsi_signals
 from strategies.ma_crossover_strategy import generate_signals as ma_signals
 from strategies.macd_strategy import generate_signals as macd_signals
 from strategies.factors.volume_factor import compute as volume_compute
-from api.services.sentiment_service import SentimentService
 from db.schema import DEFAULT_DB_PATH
 
 BUY_THRESHOLD = 0.3
 SELL_THRESHOLD = -0.3
-SENTIMENT_BOOST = 1.2
-SENTIMENT_MIN_CONFIDENCE = 0.6
 MAX_POSITION_PCT = 0.10
 CONVICTION_BONUS = 1.3
 CONVICTION_MIN_COUNT = 2
@@ -30,7 +27,6 @@ def _last_signal(signals: pd.Series) -> str:
 class SignalService:
     def __init__(self, db_path: str = DEFAULT_DB_PATH):
         self.db_path = db_path
-        self._sentiment_svc = SentimentService(db_path=db_path)
 
     def get_signal(self, symbol: str, price_data: list[dict]) -> dict:
         symbol = symbol.upper()
@@ -43,8 +39,6 @@ class SignalService:
             "ma_signal": "hold",
             "macd_signal": "hold",
             "volume_ratio": 1.0,
-            "sentiment": "neutral",
-            "sentiment_confidence": 0.5,
         }
 
         if len(price_data) < 35:
@@ -60,10 +54,6 @@ class SignalService:
         ma_signal = _last_signal(ma_signals(close))
         macd_signal = _last_signal(macd_signals(close))
 
-        sentiment_result = self._sentiment_svc.get_sentiment(symbol)
-        sentiment = sentiment_result["sentiment"]
-        sentiment_confidence = sentiment_result["confidence"]
-
         scores = [_signal_to_score(rsi_signal), _signal_to_score(ma_signal), _signal_to_score(macd_signal)]
         raw_score = sum(scores)
         normalized = raw_score / 3.0
@@ -77,13 +67,6 @@ class SignalService:
         volume_ratio = float(volume_compute(volume).iloc[-1])
         if volume_ratio < VOLUME_RATIO_THRESHOLD:
             normalized *= VOLUME_LOW_MULTIPLIER
-
-        # Sentiment boost (clamps preserved)
-        if sentiment_confidence >= SENTIMENT_MIN_CONFIDENCE:
-            if sentiment == "bullish" and normalized > 0:
-                normalized = min(1.0, normalized * SENTIMENT_BOOST)
-            elif sentiment == "bearish" and normalized < 0:
-                normalized = max(-1.0, normalized * SENTIMENT_BOOST)
 
         score = round(normalized, 4)
 
@@ -104,6 +87,4 @@ class SignalService:
             "ma_signal": ma_signal,
             "macd_signal": macd_signal,
             "volume_ratio": round(volume_ratio, 4),
-            "sentiment": sentiment,
-            "sentiment_confidence": sentiment_confidence,
         }
