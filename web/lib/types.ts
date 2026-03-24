@@ -69,3 +69,8 @@ export interface WatchlistItem {
   notes: string;
   added_at: string;
 }
+
+export interface TickerResult {
+  symbol: string;
+  name: string;
+}

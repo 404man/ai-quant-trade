@@ -4,6 +4,7 @@ import type {
   GatewayConfig,
   PriceBar,
   SignalResponse,
+  TickerResult,
   TradeResponse,
   WatchlistItem,
 } from "./types";
@@ -11,8 +12,14 @@ import type {
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "/api";
 
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY || "";
+
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, options);
+  const headers: Record<string, string> = {
+    ...(options?.headers as Record<string, string>),
+    ...(API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {}),
+  };
+  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
     throw new Error(`${res.status}: ${text}`);
@@ -144,4 +151,8 @@ export async function removeFromWatchlist(
   return apiFetch<{ symbol: string; status: string }>(`/watchlist/${symbol}`, {
     method: "DELETE",
   });
+}
+
+export async function searchTickers(q: string): Promise<TickerResult[]> {
+  return apiFetch<TickerResult[]>(`/watchlist/search?q=${encodeURIComponent(q)}`);
 }

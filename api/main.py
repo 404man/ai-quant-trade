@@ -1,4 +1,7 @@
 # api/main.py
+from dotenv import load_dotenv
+load_dotenv()
+
 from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
 from api.auth import verify_api_key
