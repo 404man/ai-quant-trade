@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: api/Dockerfile
     ports:
-      - "8000:8000"
+      - "18002:18002"
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
@@ -19,7 +19,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - API_URL=http://api:8000
+      - API_URL=http://api:18002
     depends_on:
       - api
     restart: unless-stopped
